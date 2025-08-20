@@ -9,97 +9,173 @@ import argparse
 ARCHIVE_FILE = "bandit_progress.json"
 
 def load_archive():
-    if os.path.exists(ARCHIVE_FILE):
-        with open(ARCHIVE_FILE, 'r') as f:
-            return json.load(f)
+    """Load archive with error handling"""
+    try:
+        if os.path.exists(ARCHIVE_FILE):
+            with open(ARCHIVE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Warning: Could not load archive file: {e}")
+        if os.path.exists(ARCHIVE_FILE):
+            os.rename(ARCHIVE_FILE, f"{ARCHIVE_FILE}.corrupted")
     return {}
 
 def save_archive(archive):
-    with open(ARCHIVE_FILE, 'w') as f:
-        json.dump(archive, f, indent=2)
+    """Save archive with atomic write"""
+    temp_file = f"{ARCHIVE_FILE}.tmp"
+    try:
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            json.dump(archive, f, indent=2, ensure_ascii=False)
+        os.replace(temp_file, ARCHIVE_FILE)
+    except IOError as e:
+        print(f"Warning: Could not save archive: {e}")
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
 
-def initialize_ssh(host, username, password, port):
+def initialize_ssh(host, username, password=None, key_path=None, port=2220):
+    """Initialize SSH connection with password or key authentication"""
     client = paramiko.client.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(host, username=username, password=password, port=port)
-    return client
-
-def initialize_ssh_key(host, username, key_path, port):
-    pkey = paramiko.RSAKey.from_private_key_file(key_path)
-    client = paramiko.client.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(host, username=username, pkey=pkey, port=port)
-    return client
+    
+    try:
+        if key_path:
+            pkey = paramiko.RSAKey.from_private_key_file(key_path)
+            client.connect(host, username=username, pkey=pkey, port=port, timeout=10)
+        else:
+            client.connect(host, username=username, password=password, port=port, timeout=10)
+        return client
+    except Exception as e:
+        client.close()
+        raise e
 
 def run_command(client, command, timeout=120):
-    stdin, stdout, stderr = client.exec_command('bash -c \''+command+'\'', timeout=timeout)
-    
-    start_time = time.time()
-    while not stdout.channel.exit_status_ready():
-        if time.time() - start_time > timeout:
-            stdout.channel.close()
-            raise TimeoutError(f"Command timed out after {timeout} seconds")
-        time.sleep(0.1)
-    
-    return stdout.read().decode().strip()
+    """Execute command with improved error handling and timeout"""
+    try:
+        stdin, stdout, stderr = client.exec_command(f'bash -c \'{command}\'', timeout=timeout)
+        
+        start_time = time.time()
+        while not stdout.channel.exit_status_ready():
+            if time.time() - start_time > timeout:
+                stdout.channel.close()
+                raise TimeoutError(f"Command timed out after {timeout} seconds")
+            time.sleep(0.05)
+        
+        result = stdout.read().decode('utf-8', errors='ignore').strip()
+        error_output = stderr.read().decode('utf-8', errors='ignore').strip()
+        
+        if error_output and not result:
+            raise Exception(f"Command failed: {error_output}")
+            
+        return result
+    finally:
+        try:
+            stdin.close()
+            stdout.close()
+            stderr.close()
+        except:
+            pass
 
 def run_command_locally(command):
     return os.popen(command).read().strip()
 
 def bandit26_vim_exploit(client):
+    """Optimized vim exploit with better timing and error handling"""
     print('Starting tiny terminal and activating Vim mode...')
     channel = client.invoke_shell(term='vt100', width=20, height=5)
-    channel.send('v')
-    time.sleep(1)
-    print('Setting shell...')
-    channel.send(':set shell=/bin/bash\r')
-    time.sleep(1)
-    print('Starting shell...')
-    channel.send(':shell\r')
-    time.sleep(1)
-    while channel.recv_ready():
-        channel.recv(4096)
-    print('Getting password...')
-    channel.send('./bandit27-do cat /etc/bandit_pass/bandit27\r')
-    time.sleep(1)
-    output = ""
-    while channel.recv_ready():
-        chunk = channel.recv(4096).decode('utf-8', errors='ignore')
-        output += chunk.strip()
-        time.sleep(0.1)
     
-    channel.close()
-    return output.splitlines()[2]
+    commands = [
+        ('v', 'Activating Vim mode'),
+        (':set shell=/bin/bash\r', 'Setting shell'),
+        (':shell\r', 'Starting shell'),
+        ('./bandit27-do cat /etc/bandit_pass/bandit27\r', 'Getting password')
+    ]
+    
+    try:
+        for i, (cmd, desc) in enumerate(commands):
+            print(f'{desc}...')
+            channel.send(cmd)
+            time.sleep(1.5 if i < 3 else 2)
+            
+            if i == 2:
+                while channel.recv_ready():
+                    channel.recv(4096)
+        
+        output = ""
+        max_wait = 10
+        start_time = time.time()
+        
+        while time.time() - start_time < max_wait:
+            if channel.recv_ready():
+                chunk = channel.recv(4096).decode('utf-8', errors='ignore')
+                output += chunk
+                if 'bandit27' in output.lower():
+                    break
+            time.sleep(0.1)
+        
+        lines = [line.strip() for line in output.splitlines() if line.strip()]
+        for line in lines:
+            if len(line) == 32 and line.isalnum():
+                return line
+        
+        return lines[2] if len(lines) > 2 else lines[-1]
+        
+    finally:
+        channel.close()
 
 def bandit32_shellescape(client):
+    """Optimized shell escape with better output parsing"""
     channel = client.invoke_shell(term='vt100')
-    time.sleep(1)
-    print('Escaping bashjail...')
-    channel.send('$0\n')
-    time.sleep(1)
-    while channel.recv_ready():
-        channel.recv(4096)
-    print('Getting password...')
-    channel.send('cat /etc/bandit_pass/bandit33\n')
-    time.sleep(1)
-    output = ""
-    while channel.recv_ready():
-        chunk = channel.recv(4096).decode('utf-8', errors='ignore')
-        output += chunk
-        time.sleep(0.1)
-    channel.close()
     
-    return output.splitlines()[1]
+    try:
+        time.sleep(1)
+        print('Escaping bashjail...')
+        channel.send('$0\n')
+        time.sleep(2)
+        
+        while channel.recv_ready():
+            channel.recv(4096)
+        
+        print('Getting password...')
+        channel.send('cat /etc/bandit_pass/bandit33\n')
+        time.sleep(2)
+        
+        output = ""
+        max_wait = 10
+        start_time = time.time()
+        
+        while time.time() - start_time < max_wait:
+            if channel.recv_ready():
+                chunk = channel.recv(4096).decode('utf-8', errors='ignore')
+                output += chunk
+                if len(chunk.strip()) == 32 and chunk.strip().isalnum():
+                    return chunk.strip()
+            time.sleep(0.1)
+        
+        lines = [line.strip() for line in output.splitlines() if line.strip()]
+        for line in lines:
+            if len(line) == 32 and line.isalnum():
+                return line
+                
+        return lines[1] if len(lines) > 1 else lines[0] if lines else ""
+        
+    finally:
+        channel.close()
 
 def create_temp_key(key_content):
+    """Create temporary key file with proper cleanup"""
     if not key_content or not key_content.strip():
         raise ValueError("Key content is empty")
     
-    temp_file = tempfile.NamedTemporaryFile(mode="w+", delete=False, encoding='utf-8')
-    temp_file.write(key_content)
-    temp_file.close()
-    os.chmod(temp_file.name, 0o600)
-    return temp_file.name
+    try:
+        temp_file = tempfile.NamedTemporaryFile(mode="w+", delete=False, 
+                                               encoding='utf-8', prefix='bandit_key_')
+        temp_file.write(key_content.strip())
+        temp_file.flush()
+        temp_file.close()
+        os.chmod(temp_file.name, 0o600)
+        return temp_file.name
+    except Exception as e:
+        raise ValueError(f"Failed to create temp key file: {e}")
 
 def get_commands():
     return [
@@ -139,31 +215,32 @@ def get_commands():
     ]
 
 def solve_level(level, password, key_path=None):
+    """Solve a specific bandit level with optimized connection logic"""
     commands = get_commands()
     host = "bandit.labs.overthewire.org"
     port = 2220
-    username = f"bandit{level}"
+    
+    username_map = {17: f"bandit{level}", 26: "bandit26"}
+    username = username_map.get(level, "bandit14" if level in [14, 15, 16] else f"bandit{level}")
+    
+    auth_password = password
+    auth_key_path = key_path
+    
+    if level == 32:
+        archive = load_archive()
+        auth_password = archive[str(level-1)]['password']
+        print(f"Using level 31 password for SSH: {auth_password}")
+        auth_key_path = None
+    elif level in [14, 15, 16, 17, 26]:
+        auth_password = None
     
     for attempt in range(3):
+        client = None
         try:
             print(f"⚡︎ Level {level} (attempt {attempt + 1})...")
             print(f"⟳ Command: `{commands[level]}`")
             
-            if level in [14, 15, 16, 17, 26]:
-                if level == 17:
-                    username = f"bandit{level}"
-                elif level == 26:
-                    username = "bandit26"
-                else:
-                    username = "bandit14"
-                client = initialize_ssh_key(host, username, key_path, port)
-            elif level == 32:
-                archive = load_archive()
-                level31_password = archive[str(level-1)]['password']
-                print(f"Using level 31 password for SSH: {level31_password}")
-                client = initialize_ssh(host, username, level31_password, port)
-            else:
-                client = initialize_ssh(host, username, password, port)
+            client = initialize_ssh(host, username, auth_password, auth_key_path, port)
             
             if level == 26:
                 result = bandit26_vim_exploit(client)
@@ -171,13 +248,12 @@ def solve_level(level, password, key_path=None):
                 result = bandit32_shellescape(client)
             elif level in [27, 28, 29, 30, 31]:
                 archive = load_archive()
-                print(f"Using previous password: {archive[str(level-1)]['password']}")
-                commands[level] = commands[level].replace("PREVPASSWORD", archive[str(level-1)]['password'])
-                result = run_command_locally(commands[level])
+                prev_password = archive[str(level-1)]['password']
+                print(f"Using previous password: {prev_password}")
+                local_command = commands[level].replace("PREVPASSWORD", prev_password)
+                result = run_command_locally(local_command)
             else:
-                result = run_command(client, commands[level])
-            
-            client.close()
+                result = run_command(client, commands[level], timeout=180)
             
             if result and result.strip():
                 if level == 0:
@@ -196,11 +272,15 @@ def solve_level(level, password, key_path=None):
                 
         except Exception as e:
             print(f"    ✗ Attempt {attempt + 1} failed: {e}")
-            if 'client' in locals():
-                client.close()
+        finally:
+            if client:
+                try:
+                    client.close()
+                except:
+                    pass
             
         if attempt < 2:
-            time.sleep(1)
+            time.sleep(2 ** attempt)
     
     raise Exception(f"Level {level} failed after 3 attempts")
 
@@ -239,34 +319,51 @@ def main():
     
     key_path = args.key
     
-    for level in range(args.start, len(commands)):
-        if level in [14, 15, 16, 17, 26]:
-            if not key_path or not os.path.exists(key_path):
-                if level == 26 and str(25) in archive:
-                    key_content = archive[str(25)].get('key', password)
-                else:
-                    key_content = password
-                key_path = create_temp_key(key_content)
-        
-        try:
-            password = solve_level(level, password, key_path)
+    temp_keys_to_cleanup = []
+    
+    try:
+        for level in range(args.start, len(commands)):
+            if level in [14, 15, 16, 17, 26]:
+                if not key_path or not os.path.exists(key_path):
+                    if level == 26 and str(25) in archive:
+                        key_content = archive[str(25)].get('key', password)
+                    else:
+                        key_content = password
+                    key_path = create_temp_key(key_content)
+                    if not args.key:
+                        temp_keys_to_cleanup.append(key_path)
             
-            is_key = level in [13, 17, 25]
-            entry = {
-                'level': level,
-                'timestamp': time.time(),
-                'key' if is_key else 'password': password
-            }
-            archive[str(level)] = entry
-            save_archive(archive)
+            try:
+                password = solve_level(level, password, key_path)
+                
+                is_key = level in [13, 17, 25]
+                entry = {
+                    'level': level,
+                    'timestamp': time.time(),
+                    ('key' if is_key else 'password'): password
+                }
+                archive[str(level)] = entry
+                save_archive(archive)
+                
+            except Exception as e:
+                print(f"Failed at level {level}: {e}")
+                break
             
-        except Exception as e:
-            print(f"Failed at level {level}: {e}")
-            break
-        
-        if level in [16, 17, 26] and key_path and not args.key:
-            os.remove(key_path)
-            key_path = None
+            if level in [16, 17, 26] and key_path in temp_keys_to_cleanup:
+                try:
+                    os.remove(key_path)
+                    temp_keys_to_cleanup.remove(key_path)
+                except OSError:
+                    pass
+                key_path = None
+                
+    finally:
+        for temp_key in temp_keys_to_cleanup:
+            try:
+                if os.path.exists(temp_key):
+                    os.remove(temp_key)
+            except OSError:
+                pass
 
 if __name__ == "__main__":
     main()
